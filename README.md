@@ -6,6 +6,7 @@ Built during my Data Science internship at Smart Vision.
 
 ## Features
 
+- Streamlit web interface: login/register, prediction form, paginated history, view and delete
 - Machine learning model: soft-voting ensemble of Logistic Regression and Random Forest, trained with SMOTE to handle class imbalance (ROC-AUC: 0.85)
 - REST API built with FastAPI
 - User registration and OAuth2 login with JWT tokens and hashed passwords (passlib)
@@ -36,7 +37,9 @@ Python, FastAPI, scikit-learn, imbalanced-learn, Pandas, SQLAlchemy, PostgreSQL,
 ├── verify_predictor.py    # Checks the API matches the model
 ├── Alpha Group Project (Ensemble Model).ipynb   # Data analysis and model development
 ├── .env.example           # Template for environment variables
+├── streamlit_app.py       # Streamlit frontend
 └── requirements.txt
+
 ```
 
 ## How to Run
@@ -60,17 +63,20 @@ Python, FastAPI, scikit-learn, imbalanced-learn, Pandas, SQLAlchemy, PostgreSQL,
 ```
    python train_and_save.py
 ```
-6. Start the API:
-```
+6. Start the API (terminal 1):
    uvicorn app.main:app --reload
-```
-7. Open http://127.0.0.1:8000/docs
+
+7. Start the frontend (terminal 2, with the venv activated):
+   streamlit run streamlit_app.py
+
+8. Open http://localhost:8501 (API docs are still at http://127.0.0.1:8000/docs)
 
 ## How to Use
 
-1. Create a user with **POST /register**.
-2. Click **Authorize** at the top of the docs page and log in with your username and password.
-3. Make predictions with **POST /predictions**.
+1. Open the Streamlit app and register an account.
+2. Log in.
+3. Fill in the form on "New prediction" and click Predict.
+4. Review past predictions on the "History" page.
 
 ## Endpoints
 

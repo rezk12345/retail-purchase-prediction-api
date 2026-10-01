@@ -10,3 +10,5 @@ passlib
 python-multipart
 python-dotenv
 pyjwt
+streamlit
+requests
