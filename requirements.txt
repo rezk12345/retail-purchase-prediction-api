@@ -12,3 +12,4 @@ python-dotenv
 pyjwt
 streamlit
 requests
+google-genai

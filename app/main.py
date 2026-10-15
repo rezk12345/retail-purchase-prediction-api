@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from app import models, schemas
+from app import gemini_service, models, schemas
 from app.auth import hash_password, verify_password, create_access_token, get_current_user
 from app.database import Base, engine
 from app.dependencies import get_db
@@ -92,6 +92,36 @@ def get_prediction(
     if record is None:
         raise HTTPException(status_code=404, detail="Prediction not found")
     return record
+
+
+
+@app.post("/predictions/{prediction_id}/explain", response_model=schemas.ExplanationOutput)
+def explain_prediction(
+    prediction_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    record = db.query(models.Prediction).filter(models.Prediction.id == prediction_id).first()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    try:
+        text, used_model = gemini_service.explain_prediction(
+            record.input_data, record.result, record.probability
+        )
+    except gemini_service.GeminiUnavailable as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except gemini_service.GeminiBusy as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        # Never leak the raw error (it could contain request details)
+        raise HTTPException(status_code=502, detail="Gemini request failed. Try again later.")
+    if not text:
+        raise HTTPException(status_code=502, detail="Gemini returned an empty answer.")
+    return {
+        "prediction_id": record.id,
+        "explanation": text,
+        "model": used_model,
+    }
 
 
 @app.delete("/predictions/{prediction_id}")

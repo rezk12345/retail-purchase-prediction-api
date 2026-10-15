@@ -59,3 +59,9 @@ class PaginatedPredictions(BaseModel):
     page: int
     size: int
     items: list[PredictionOutput]
+
+
+class ExplanationOutput(BaseModel):
+    prediction_id: int
+    explanation: str
+    model: str

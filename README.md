@@ -6,7 +6,9 @@ Built during my Data Science internship at Smart Vision.
 
 ## Features
 
-- Streamlit web interface: login/register, prediction form, paginated history, view and delete
+- Streamlit web interface: login, prediction form, paginated history, view and delete
+- Centralised state management in the frontend
+- Gemini-powered plain-language explanation of each prediction
 - Machine learning model: soft-voting ensemble of Logistic Regression and Random Forest, trained with SMOTE to handle class imbalance (ROC-AUC: 0.85)
 - REST API built with FastAPI
 - User registration and OAuth2 login with JWT tokens and hashed passwords (passlib)
@@ -18,7 +20,7 @@ Built during my Data Science internship at Smart Vision.
 
 ## Tech Stack
 
-Python, FastAPI, scikit-learn, imbalanced-learn, Pandas, SQLAlchemy, PostgreSQL, Pydantic, PyJWT, passlib, python-dotenv
+Python, FastAPI, scikit-learn, imbalanced-learn, Pandas, SQLAlchemy, PostgreSQL, Pydantic, PyJWT, passlib, python-dotenv, Streamlit, Requests
 
 ## Project Structure
 
@@ -37,39 +39,60 @@ Python, FastAPI, scikit-learn, imbalanced-learn, Pandas, SQLAlchemy, PostgreSQL,
 ├── verify_predictor.py    # Checks the API matches the model
 ├── Alpha Group Project (Ensemble Model).ipynb   # Data analysis and model development
 ├── .env.example           # Template for environment variables
-├── streamlit_app.py       # Streamlit frontend
+├── streamlit_app.py        # Streamlit frontend with state management
+└── app/gemini_service.py   # Gemini integration (retry + fallback models)      # Streamlit frontend (with centralised state management)
 └── requirements.txt
 
 ```
 
+Create a Gemini API key in Google AI Studio and add to .env:
+   GEMINI_API_KEY=your-key
+   GEMINI_MODEL=gemini-3.5-flash-lite
+   GEMINI_FALLBACK_MODELS=gemini-3.1-flash-lite,gemini-flash-lite-latest
+Model names change over time; list the ones your key can use in AI Studio.
+
 ## How to Run
 
+
 1. Create and activate a virtual environment:
-```
    python -m venv venv
    venv\Scripts\activate
-```
-2. Install the requirements:
-```
+
+2. Install dependencies:
    pip install -r requirements.txt
-```
-3. Create a PostgreSQL database called `sv_project`.
-4. Copy `.env.example` to a new file called `.env` and fill in your values:
-```
+
+3. Create a .env file (copy .env.example) and fill in:
    DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost/sv_project
    SECRET_KEY=your-secret-key
-```
-5. Train the model (only needed once):
-```
+
+4. Make sure PostgreSQL is running and the sv_project database exists.
+
+5. (Optional) Retrain the model:
    python train_and_save.py
-```
+
 6. Start the API (terminal 1):
    uvicorn app.main:app --reload
 
-7. Start the frontend (terminal 2, with the venv activated):
+7. Start the frontend (terminal 2, venv activated):
    streamlit run streamlit_app.py
 
-8. Open http://localhost:8501 (API docs are still at http://127.0.0.1:8000/docs)
+8. Open http://localhost:8501
+   (API docs: http://127.0.0.1:8000/docs)
+
+
+## State Management
+Streamlit re-runs the script on every interaction, so remembered values live in
+st.session_state, managed in one section of streamlit_app.py: DEFAULT_STATE,
+init_state(), login_user() / logout_user(), and callbacks. A live "Session state"
+panel in the sidebar shows the state in real time. The backend is stateless
+(JWT), and permanent data is stored in PostgreSQL.
+
+## Gemini Integration
+POST /predictions/{id}/explain sends the saved prediction to Gemini and returns a
+plain-language explanation. The API key stays on the server. Requests are
+retried, then fall back to backup models if a model is overloaded (503), retired
+(404) or rate-limited (429). The explanation is an interpretation, not the model's
+exact reasoning.
 
 ## How to Use
 
